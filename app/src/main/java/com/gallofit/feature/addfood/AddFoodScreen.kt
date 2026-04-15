@@ -2,6 +2,7 @@ package com.gallofit.feature.addfood
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,15 +10,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -31,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.gallofit.core.data.FoodViewModel
+import com.gallofit.core.data.remote.FoodSearchResult
 import com.gallofit.core.domain.model.DefaultTemplates
-import com.gallofit.core.domain.model.MealTemplate
 import com.gallofit.core.domain.model.MealSlot
+import com.gallofit.core.domain.model.MealTemplate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,15 +66,28 @@ fun AddFoodScreen(
     var protein by remember { mutableStateOf("") }
     var carbs by remember { mutableStateOf("") }
     var fat by remember { mutableStateOf("") }
-    var selectedSlot by remember { mutableStateOf(MealSlot.valueOf(initialSlot.uppercase())) }
+    var selectedSlot by remember { mutableStateOf(runCatching { MealSlot.valueOf(initialSlot.uppercase()) }.getOrDefault(MealSlot.LUNCH)) }
     var slotExpanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val searchState by foodViewModel.searchState.collectAsState()
+
+    fun fillFromSearch(r: FoodSearchResult) {
+        foodName = r.name
+        calories = r.calories.toString()
+        protein = String.format("%.1f", r.protein)
+        carbs = String.format("%.1f", r.carbs)
+        fat = String.format("%.1f", r.fat)
+        foodViewModel.clearSearch()
+        searchQuery = ""
+    }
 
     fun fillFromTemplate(t: MealTemplate) {
         foodName = t.name
         calories = t.totalCalories.toString()
-        protein = t.totalProtein.toString()
-        carbs = t.totalCarbs.toString()
-        fat = t.totalFat.toString()
+        protein = String.format("%.1f", t.totalProtein)
+        carbs = String.format("%.1f", t.totalCarbs)
+        fat = String.format("%.1f", t.totalFat)
     }
 
     fun save() {
@@ -97,9 +117,62 @@ fun AddFoodScreen(
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
+
+            // Busca API
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        searchQuery = it
+                        foodViewModel.searchFood(it)
+                    },
+                    label = { Text("Buscar alimento") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = ""; foodViewModel.clearSearch() }) {
+                                Icon(Icons.Default.Close, contentDescription = "Limpar")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Resultados da busca
+            if (searchState.isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            }
+            if (searchState.results.isNotEmpty()) {
+                items(searchState.results) { result ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { fillFromSearch(result) },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(result.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1)
+                                Text("${result.calories} kcal · ${result.protein.toInt()}g prot · ${result.source}",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                            IconButton(onClick = { fillFromSearch(result) }) {
+                                Icon(Icons.Default.Add, contentDescription = "Usar")
+                            }
+                        }
+                    }
+                }
+                item { HorizontalDivider() }
+            }
+            if (searchState.error != null && searchQuery.length >= 2 && !searchState.isLoading) {
+                item { Text(searchState.error!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            }
 
             // Seletor de refeição
             item {
@@ -123,14 +196,8 @@ fun AddFoodScreen(
                 }
             }
 
-            // Campos manuais
             item {
-                OutlinedTextField(
-                    value = foodName,
-                    onValueChange = { foodName = it },
-                    label = { Text("Nome do alimento") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                OutlinedTextField(value = foodName, onValueChange = { foodName = it }, label = { Text("Nome do alimento") }, modifier = Modifier.fillMaxWidth())
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -148,7 +215,6 @@ fun AddFoodScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
                 }
             }
-
             item {
                 Button(onClick = ::save, modifier = Modifier.fillMaxWidth(), enabled = foodName.isNotBlank() && calories.isNotBlank()) {
                     Text("Salvar")
@@ -161,17 +227,12 @@ fun AddFoodScreen(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Templates rápidos", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             }
-
             items(DefaultTemplates.all) { template ->
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable { fillFromTemplate(template) },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(template.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                             Text("${template.totalCalories} kcal · ${template.totalProtein.toInt()}g prot",
@@ -187,7 +248,6 @@ fun AddFoodScreen(
                     }
                 }
             }
-
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }

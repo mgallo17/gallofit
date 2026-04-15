@@ -83,7 +83,7 @@ fun GalloFitNavGraph() {
         ) {
             composable(Screen.Dashboard.route) { DashboardScreen(navController, foodViewModel) }
             composable(Screen.FoodLog.route) { FoodLogScreen(navController, foodViewModel) }
-            composable(Screen.Workout.route) { WorkoutScreen(navController) }
+            composable(Screen.Workout.route) { WorkoutScreen(navController, foodViewModel) }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(
                 route = "add_food/{slot}",

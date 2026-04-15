@@ -5,9 +5,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
 
-@Database(entities = [FoodEntryEntity::class], version = 1, exportSchema = false)
+@Database(entities = [FoodEntryEntity::class, WorkoutEntryEntity::class], version = 2, exportSchema = false)
 abstract class GalloFitDatabase : RoomDatabase() {
     abstract fun foodEntryDao(): FoodEntryDao
+    abstract fun workoutEntryDao(): WorkoutEntryDao
 
     companion object {
         @Volatile private var INSTANCE: GalloFitDatabase? = null
@@ -18,7 +19,7 @@ abstract class GalloFitDatabase : RoomDatabase() {
                     context.applicationContext,
                     GalloFitDatabase::class.java,
                     "gallofit.db"
-                ).build().also { INSTANCE = it }
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
     }
 }
