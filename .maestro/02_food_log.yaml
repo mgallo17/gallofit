@@ -1,0 +1,30 @@
+appId: com.gallofit.app
+---
+# GalloFit — Teste E2E: Adicionar refeição
+# Equivalente ao Playwright para Android
+
+- launchApp
+
+# Navegar para Refeições
+- tapOn:
+    text: "Refeições"
+
+- assertVisible:
+    text: "Refeições de hoje"
+
+# Verificar slots de refeição
+- assertVisible:
+    text: "Pequeno-almoço"
+    
+- assertVisible:
+    text: "Almoço"
+    
+- assertVisible:
+    text: "Jantar"
+
+# Tap no FAB para adicionar
+- tapOn:
+    id: ".*add.*"
+
+# Screenshot
+- takeScreenshot: food_log_screen

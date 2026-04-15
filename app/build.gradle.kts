@@ -76,3 +76,28 @@ dependencies {
 
     testImplementation(libs.junit)
 }
+
+// Testing
+dependencies {
+    // Unit tests
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.11.3")
+    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("app.cash.turbine:turbine:1.2.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    // Instrumented / UI tests
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // BDD - Cucumber
+    androidTestImplementation("io.cucumber:cucumber-android:7.20.1")
+    androidTestImplementation("io.cucumber:cucumber-picocontainer:7.20.1")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
