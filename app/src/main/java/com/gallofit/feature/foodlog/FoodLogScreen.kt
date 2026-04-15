@@ -1,13 +1,24 @@
 package com.gallofit.feature.foodlog
-import androidx.compose.foundation.layout.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.*
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,11 +30,9 @@ import com.gallofit.core.domain.model.MealSlot
 @Composable
 fun FoodLogScreen(navController: NavController) {
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Refeições de hoje") })
-        },
+        topBar = { TopAppBar(title = { Text("Refeições de hoje") }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: AddFood */ }) {
+            FloatingActionButton(onClick = { }) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar")
             }
         }
@@ -34,9 +43,7 @@ fun FoodLogScreen(navController: NavController) {
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
             MealSlot.entries.forEach { slot ->
-                item {
-                    MealSlotSection(slot = slot, entries = emptyList())
-                }
+                item { MealSlotSection(slot = slot) }
             }
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
@@ -44,17 +51,15 @@ fun FoodLogScreen(navController: NavController) {
 }
 
 @Composable
-fun MealSlotSection(slot: MealSlot, entries: List<Any>) {
+fun MealSlotSection(slot: MealSlot) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("${slot.emoji} ${slot.displayName}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Text("0 kcal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (entries.isEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Sem registos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Sem registos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
