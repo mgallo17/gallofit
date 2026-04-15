@@ -27,38 +27,47 @@ import com.gallofit.core.data.FoodViewModel
 import com.gallofit.feature.addfood.AddFoodScreen
 import com.gallofit.feature.dashboard.DashboardScreen
 import com.gallofit.feature.foodlog.FoodLogScreen
+import com.gallofit.feature.gym.GymScreen
+import com.gallofit.feature.healthconnect.HealthConnectScreen
+import com.gallofit.feature.profile.ProfileScreen
 import com.gallofit.feature.settings.SettingsScreen
 import com.gallofit.feature.workout.WorkoutScreen
 
-sealed class Screen(val route: String, val label: String) {
-    object Dashboard : Screen("dashboard", "Início")
-    object FoodLog : Screen("food_log", "Refeições")
-    object Workout : Screen("workout", "Treino")
-    object Settings : Screen("settings", "Definições")
-    object AddFood : Screen("add_food/{slot}", "Adicionar")
+sealed class Screen(val route: String) {
+    object Dashboard : Screen("dashboard")
+    object FoodLog : Screen("food_log")
+    object Workout : Screen("workout")
+    object Settings : Screen("settings")
+    object AddFood : Screen("add_food/{slot}")
+    object Gym : Screen("gym")
+    object Profile : Screen("profile")
+    object HealthConnect : Screen("health_connect")
 }
+
+private val bottomNavScreens = listOf(
+    Triple(Screen.Dashboard, Icons.Default.Home, "Início"),
+    Triple(Screen.FoodLog, Icons.Default.Restaurant, "Refeições"),
+    Triple(Screen.Workout, Icons.Default.FitnessCenter, "Treino"),
+    Triple(Screen.Settings, Icons.Default.Settings, "Definições"),
+)
+
+private val fullscreenRoutes = setOf("add_food", "gym", "profile", "health_connect")
 
 @Composable
 fun GalloFitNavGraph() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
+    val currentRoute = navBackStackEntry?.destination?.route ?: ""
     val foodViewModel: FoodViewModel = viewModel()
 
-    val bottomNavItems = listOf(
-        Triple(Screen.Dashboard, Icons.Default.Home, "Início"),
-        Triple(Screen.FoodLog, Icons.Default.Restaurant, "Refeições"),
-        Triple(Screen.Workout, Icons.Default.FitnessCenter, "Treino"),
-        Triple(Screen.Settings, Icons.Default.Settings, "Definições"),
-    )
-
-    val showBottomBar = currentDestination?.route?.startsWith("add_food") == false
+    val showBottomBar = fullscreenRoutes.none { currentRoute.startsWith(it) }
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
-                    bottomNavItems.forEach { (screen, icon, label) ->
+                    val currentDestination = navBackStackEntry?.destination
+                    bottomNavScreens.forEach { (screen, icon, label) ->
                         NavigationBarItem(
                             icon = { Icon(icon, contentDescription = label) },
                             label = { Text(label) },
@@ -84,7 +93,10 @@ fun GalloFitNavGraph() {
             composable(Screen.Dashboard.route) { DashboardScreen(navController, foodViewModel) }
             composable(Screen.FoodLog.route) { FoodLogScreen(navController, foodViewModel) }
             composable(Screen.Workout.route) { WorkoutScreen(navController, foodViewModel) }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Settings.route) { SettingsScreen(navController, foodViewModel) }
+            composable(Screen.Gym.route) { GymScreen(navController, foodViewModel) }
+            composable(Screen.Profile.route) { ProfileScreen(foodViewModel) }
+            composable(Screen.HealthConnect.route) { HealthConnectScreen(navController, foodViewModel) }
             composable(
                 route = "add_food/{slot}",
                 arguments = listOf(navArgument("slot") { type = NavType.StringType })

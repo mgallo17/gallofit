@@ -14,7 +14,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -77,6 +79,18 @@ fun WorkoutScreen(navController: NavController, foodViewModel: FoodViewModel = v
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            // Botão para ir ao ginásio detalhado
+            item {
+                OutlinedButton(
+                    onClick = { navController.navigate("gym") },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.FitnessCenter, null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("🏋️ Registrar ginásio (exercício a exercício)")
+                }
+            }
 
             if (workoutState.todayWorkouts.isNotEmpty()) {
                 item { Text("Hoje", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }

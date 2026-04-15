@@ -5,10 +5,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
 
-@Database(entities = [FoodEntryEntity::class, WorkoutEntryEntity::class], version = 2, exportSchema = false)
+@Database(entities = [FoodEntryEntity::class, WorkoutEntryEntity::class, GymSetEntity::class], version = 3, exportSchema = false)
 abstract class GalloFitDatabase : RoomDatabase() {
     abstract fun foodEntryDao(): FoodEntryDao
     abstract fun workoutEntryDao(): WorkoutEntryDao
+    abstract fun gymSetDao(): GymSetDao
 
     companion object {
         @Volatile private var INSTANCE: GalloFitDatabase? = null
