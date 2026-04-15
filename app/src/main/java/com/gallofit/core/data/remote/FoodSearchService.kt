@@ -21,30 +21,43 @@ object FoodSearchService {
 
     suspend fun search(query: String): List<FoodSearchResult> = withContext(Dispatchers.IO) {
         val results = mutableListOf<FoodSearchResult>()
-        try {
-            results.addAll(searchOpenFoodFacts(query))
-        } catch (_: Exception) {}
-        if (results.size < 5) {
-            try {
-                results.addAll(searchUSDA(query))
-            } catch (_: Exception) {}
+        // Rodar as duas em paralelo
+        val offJob = kotlinx.coroutines.async { 
+            try { searchOpenFoodFacts(query) } catch (_: Exception) { emptyList() }
         }
-        results.take(20)
+        val usdaJob = kotlinx.coroutines.async { 
+            try { searchUSDA(query) } catch (_: Exception) { emptyList() }
+        }
+        results.addAll(offJob.await())
+        results.addAll(usdaJob.await())
+        // Deduplica por nome similar e ordena OFF primeiro
+        results.distinctBy { it.name.lowercase().take(20) }.take(20)
     }
 
     private fun searchOpenFoodFacts(query: String): List<FoodSearchResult> {
         val encoded = URLEncoder.encode(query, "UTF-8")
-        val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$encoded&search_simple=1&action=process&json=1&page_size=10&fields=product_name,brands,nutriments,serving_size"
-        val response = URL(url).readText()
+        val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$encoded&search_simple=1&action=process&json=1&page_size=15&lc=pt,en&fields=product_name,brands,nutriments,serving_size,product_name_pt,product_name_en"
+        val conn = URL(url).openConnection()
+        conn.setRequestProperty("User-Agent", "GalloFit/3.0 (mgallo17@gmail.com)")
+        conn.connectTimeout = 8000
+        conn.readTimeout = 8000
+        val response = conn.getInputStream().bufferedReader().readText()
         val json = JSONObject(response)
         val products = json.optJSONArray("products") ?: return emptyList()
 
         return (0 until products.length()).mapNotNull { i ->
             val p = products.getJSONObject(i)
-            val name = p.optString("product_name").trim()
+            val name = (p.optString("product_name_pt").takeIf { it.isNotBlank() }
+                ?: p.optString("product_name_en").takeIf { it.isNotBlank() }
+                ?: p.optString("product_name")).trim()
             if (name.isBlank()) return@mapNotNull null
             val n = p.optJSONObject("nutriments") ?: return@mapNotNull null
-            val kcal = n.optDouble("energy-kcal_100g", -1.0)
+            // Tentar kcal/100g ou energy/100g convertendo kJ
+            val kcal = when {
+                n.has("energy-kcal_100g") -> n.optDouble("energy-kcal_100g", -1.0)
+                n.has("energy_100g") -> n.optDouble("energy_100g", -1.0) / 4.184
+                else -> -1.0
+            }
             if (kcal < 0) return@mapNotNull null
             FoodSearchResult(
                 name = name,
