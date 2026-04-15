@@ -27,6 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,21 +40,19 @@ import com.gallofit.app.ui.theme.BlueProtein
 import com.gallofit.app.ui.theme.OrangeCarbs
 import com.gallofit.app.ui.theme.OrangeCalorias
 import com.gallofit.app.ui.theme.YellowFat
+import com.gallofit.core.data.FoodViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(navController: NavController) {
+fun DashboardScreen(navController: NavController, foodViewModel: FoodViewModel) {
+    val daily by foodViewModel.dailyData.collectAsState()
     val today = LocalDate.now()
     val dayName = today.format(DateTimeFormatter.ofPattern("EEEE, d MMM", Locale("pt")))
 
-    val caloriasMeta = 2100
-    val caloriasConsumidas = 1685
-    val protMeta = 190; val protConsumida = 145
-    val carbsMeta = 160; val carbsConsumidos = 89
-    val gordMeta = 65; val gordConsumida = 46
+    val protMeta = 190; val carbsMeta = 160; val gordMeta = 65
 
     Scaffold(
         topBar = {
@@ -62,7 +62,7 @@ fun DashboardScreen(navController: NavController) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { }) {
+            FloatingActionButton(onClick = { navController.navigate("add_food/LUNCH") }) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar refeição")
             }
         }
@@ -72,12 +72,12 @@ fun DashboardScreen(navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { CaloriasCard(consumidas = caloriasConsumidas, meta = caloriasMeta) }
+            item { CaloriasCard(consumidas = daily.totalCalories, meta = daily.caloriasGoal) }
             item {
                 MacrosCard(
-                    protConsumida = protConsumida, protMeta = protMeta,
-                    carbsConsumidos = carbsConsumidos, carbsMeta = carbsMeta,
-                    gordConsumida = gordConsumida, gordMeta = gordMeta
+                    protConsumida = daily.totalProtein.toInt(), protMeta = protMeta,
+                    carbsConsumidos = daily.totalCarbs.toInt(), carbsMeta = carbsMeta,
+                    gordConsumida = daily.totalFat.toInt(), gordMeta = gordMeta
                 )
             }
             item { TreinoCard() }
@@ -88,13 +88,14 @@ fun DashboardScreen(navController: NavController) {
 
 @Composable
 fun CaloriasCard(consumidas: Int, meta: Int) {
+    val progress = if (meta > 0) consumidas.toFloat() / meta.toFloat() else 0f
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Calorias", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
             Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
-                    progress = { consumidas.toFloat() / meta.toFloat() },
+                    progress = { progress.coerceIn(0f, 1f) },
                     modifier = Modifier.size(140.dp),
                     strokeWidth = 12.dp,
                     color = OrangeCalorias,
@@ -137,7 +138,7 @@ fun MacroRow(label: String, consumed: Int, target: Int, unit: String, color: Col
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
-            progress = { consumed.toFloat() / target.toFloat() },
+            progress = { if (target > 0) (consumed.toFloat() / target.toFloat()).coerceIn(0f, 1f) else 0f },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
             color = color,
             trackColor = MaterialTheme.colorScheme.surfaceVariant
@@ -152,9 +153,9 @@ fun TreinoCard() {
             Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Column(modifier = Modifier.weight(1f)) {
                 Text("Treino de hoje", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Sem treino registado", style = MaterialTheme.typography.bodyMedium)
+                Text("Sem treino registrado", style = MaterialTheme.typography.bodyMedium)
             }
-            TextButton(onClick = { }) { Text("Registar") }
+            TextButton(onClick = { }) { Text("Registrar") }
         }
     }
 }
