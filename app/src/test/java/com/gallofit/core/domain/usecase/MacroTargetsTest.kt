@@ -117,7 +117,7 @@ class GetMacroTargetsForDayUseCaseTest {
         @DisplayName("Whey Padrão → 390 kcal, 34g proteína")
         fun `whey padrao tem macros correctos`() {
             val template = DefaultTemplates.WHEY_PADRAO
-            assertEquals(390, template.totalCalories, 5) // margem 5kcal
+            assertTrue(template.totalCalories in 385..395, "Expected ~390 kcal, got ${template.totalCalories}")
             assertTrue(template.totalProtein >= 30.0)
         }
 
