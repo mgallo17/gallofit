@@ -1,5 +1,7 @@
 package com.gallofit.core.data.remote
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -20,18 +22,13 @@ data class FoodSearchResult(
 object FoodSearchService {
 
     suspend fun search(query: String): List<FoodSearchResult> = withContext(Dispatchers.IO) {
-        val results = mutableListOf<FoodSearchResult>()
-        // Rodar as duas em paralelo
-        val offJob = kotlinx.coroutines.async { 
-            try { searchOpenFoodFacts(query) } catch (_: Exception) { emptyList() }
+        coroutineScope {
+            val offJob = async { try { searchOpenFoodFacts(query) } catch (_: Exception) { emptyList() } }
+            val usdaJob = async { try { searchUSDA(query) } catch (_: Exception) { emptyList() } }
+            (offJob.await() + usdaJob.await())
+                .distinctBy { it.name.lowercase().take(20) }
+                .take(20)
         }
-        val usdaJob = kotlinx.coroutines.async { 
-            try { searchUSDA(query) } catch (_: Exception) { emptyList() }
-        }
-        results.addAll(offJob.await())
-        results.addAll(usdaJob.await())
-        // Deduplica por nome similar e ordena OFF primeiro
-        results.distinctBy { it.name.lowercase().take(20) }.take(20)
     }
 
     private fun searchOpenFoodFacts(query: String): List<FoodSearchResult> {
