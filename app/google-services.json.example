@@ -1,0 +1,5 @@
+{
+  "project_info": { "project_number": "SEU_PROJECT_NUMBER", "project_id": "SEU_PROJECT_ID" },
+  "client": [{ "client_info": { "mobilesdk_app_id": "SEU_APP_ID", "android_client_info": { "package_name": "com.gallofit.app" } }, "api_key": [{ "current_key": "SUA_API_KEY" }], "services": {} }],
+  "configuration_version": "1"
+}
