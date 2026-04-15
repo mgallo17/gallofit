@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -67,7 +68,7 @@ fun GalloFitNavGraph() {
         NavHost(
             navController = navController,
             startDestination = Screen.Dashboard.route,
-            contentPadding = paddingValues
+            modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Dashboard.route) { DashboardScreen(navController) }
             composable(Screen.FoodLog.route) { FoodLogScreen(navController) }
